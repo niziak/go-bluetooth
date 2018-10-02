@@ -1,7 +1,7 @@
 package api
 
 import (
-	"strings"
+ 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/godbus/dbus"
@@ -15,6 +15,7 @@ var manager *Manager
 
 //GetManager return the object manager reference
 func GetManager() (*Manager, error) {
+//        log.SetLevel(log.DebugLevel)
 	if manager == nil {
 		m, err := NewManager()
 		if err != nil {
@@ -89,7 +90,7 @@ func (m *Manager) watchChanges() error {
 				return
 			}
 
-			// log.Debugf("ObjectManager event: %++v", v)
+			log.Debugf("ObjectManager event: %++v", v)
 
 			switch v.Name {
 			case bluez.InterfacesAdded:
@@ -139,7 +140,8 @@ func (m *Manager) watchChanges() error {
 }
 
 func emitChanges(path dbus.ObjectPath, props map[string]map[string]dbus.Variant) {
-
+    log.Debugf("emitChanges() path: %s", path);
+    log.Debugf("emitChanges() props: %+v", props);
 	//Device1
 	if props[bluez.Device1Interface] != nil {
 		dev, err := ParseDevice(path, props[bluez.Device1Interface])

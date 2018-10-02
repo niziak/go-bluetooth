@@ -1,6 +1,7 @@
 package emitter
 
 import (
+    	log "github.com/sirupsen/logrus"
 	"errors"
 	"regexp"
 	"strings"
@@ -78,7 +79,7 @@ func NewCallback(fn func(ev Event)) *Callback {
 
 //On registers to an event
 func On(event string, callback *Callback) error {
-
+    log.Debugf("event new on (%s)", event)
 	if event == "" {
 		return errors.New("Cannot use an empty string as event name")
 	}
@@ -98,6 +99,7 @@ func On(event string, callback *Callback) error {
 
 // Emit an event
 func Emit(name string, data interface{}) error {
+    log.Debugf("Emit(%s)", name)
 	getPipe()
 	ev := BaseEvent{name, data}
 	pipe <- ev
