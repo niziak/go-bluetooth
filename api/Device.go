@@ -132,6 +132,7 @@ func (d *Device) watchProperties() error {
 
 			iface := sig.Body[0].(string)
 			changes := sig.Body[1].(map[string]dbus.Variant)
+			var PropertyChangedEvents []PropertyChangedEvent
 			for field, val := range changes {
 
 				// updates [*]Properties struct
@@ -151,6 +152,9 @@ func (d *Device) watchProperties() error {
 				}
 
 				propChanged := PropertyChangedEvent{string(iface), field, val.Value(), props, d}
+				PropertyChangedEvents = append(PropertyChangedEvents, propChanged)
+			}
+			for _, propChanged := range PropertyChangedEvents {
 				d.Emit("changed", propChanged)
 			}
 		}
