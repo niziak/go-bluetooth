@@ -2,6 +2,7 @@ package api
 
 import (
 	"strings"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/godbus/dbus"
@@ -30,7 +31,7 @@ func GetManager() (*Manager, error) {
 func NewManager() (*Manager, error) {
 	m := new(Manager)
 	m.objectManager = profile.NewObjectManager("org.bluez", "/")
-	m.objects = make(map[dbus.ObjectPath]map[string]map[string]dbus.Variant)
+	m.objects = &sync.Map{}
 
 	// watch for signaling from ObjectManager
 	m.watchChanges()
@@ -48,7 +49,7 @@ func NewManager() (*Manager, error) {
 type Manager struct {
 	objectManager       *profile.ObjectManager
 	watchChangesEnabled bool
-	objects             map[dbus.ObjectPath]map[string]map[string]dbus.Variant
+	objects				*sync.Map
 	channel             chan *dbus.Signal
 }
 
@@ -98,7 +99,7 @@ func (m *Manager) watchChanges() error {
 					props := v.Body[1].(map[string]map[string]dbus.Variant)
 
 					// keep cache up to date
-					m.objects[path] = props
+					m.objects.Store(path, props)
 
 					emitChanges(path, props)
 				}
@@ -109,9 +110,7 @@ func (m *Manager) watchChanges() error {
 					ifaces := v.Body[1].([]string)
 
 					// keep cache up to date
-					if _, ok := m.objects[path]; ok {
-						delete(m.objects, path)
-					}
+		                        m.objects.Delete(path)
 
 					for _, iF := range ifaces {
 						// device removed
@@ -216,13 +215,15 @@ func (m *Manager) LoadObjects() error {
 	if err != nil {
 		return err
 	}
-	m.objects = objs
+	for path, object := range objs {
+	    m.objects.Store(path, object)
+	}
 	return nil
 }
 
 //GetObjects return the cached list of objects from the ObjectManager
-func (m *Manager) GetObjects() *map[dbus.ObjectPath]map[string]map[string]dbus.Variant {
-	return &m.objects
+func (m *Manager) GetObjects() *sync.Map {
+	return m.objects
 }
 
 //RefreshState emit local manager objects and interfaces
@@ -234,9 +235,10 @@ func (m *Manager) RefreshState() error {
 	}
 
 	objs := m.GetObjects()
-	for path, ifaces := range *objs {
-		emitChanges(path, ifaces)
-	}
+	objs.Range(func (path, ifaces interface{}) bool {
+            emitChanges(path.(dbus.ObjectPath), ifaces.(map[string]map[string]dbus.Variant))
+            return true  
+        })
 
 	return nil
 }
