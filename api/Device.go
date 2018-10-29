@@ -18,7 +18,7 @@ var deviceRegistry = &sync.Map{}
 
 // NewDevice creates a new Device
 func NewDevice(path string) *Device {
-        if device, ok := deviceRegistry.Load(path); ok {
+	if device, ok := deviceRegistry.Load(path); ok {
 		return device.(*Device)
 	}
 
@@ -30,7 +30,7 @@ func NewDevice(path string) *Device {
 	d.Properties = d.client.Properties
 	d.chars = make(map[dbus.ObjectPath]*profile.GattCharacteristic1, 0)
 
-        deviceRegistry.Store(path, d)
+	deviceRegistry.Store(path, d)
 	// d.watchProperties()
 
 	return d
@@ -98,12 +98,12 @@ func ParseDevice(path dbus.ObjectPath, propsMap map[string]dbus.Variant) (*Devic
 }
 
 func (d *Device) watchProperties() error {
-        d.lock.RLock()
+	d.lock.RLock()
 	if d.watchPropertiesChannel != nil {
-            d.lock.RUnlock()
-	    d.unwatchProperties()
+		d.lock.RUnlock()
+		d.unwatchProperties()
 	} else {
-	    d.lock.RUnlock()
+		d.lock.RUnlock()
 	}
 
 	channel, err := d.client.Register()
@@ -130,8 +130,8 @@ func (d *Device) watchProperties() error {
 			if sig.Name != bluez.PropertiesChanged {
 				continue
 			}
-			if (fmt.Sprint(sig.Path) != d.Path) {
-			    continue
+			if fmt.Sprint(sig.Path) != d.Path {
+				continue
 			}
 
 			// for i := 0; i < len(sig.Body); i++ {
@@ -144,7 +144,7 @@ func (d *Device) watchProperties() error {
 			for field, val := range changes {
 
 				// updates [*]Properties struct
-                                d.lock.RLock()
+				d.lock.RLock()
 				props := d.Properties
 				d.lock.RUnlock()
 				s := reflect.ValueOf(props).Elem()
@@ -223,7 +223,7 @@ func (d *Device) GetProperties() (*profile.Device1Properties, error) {
 		return nil, err
 	}
 
-        d.lock.Lock()
+	d.lock.Lock()
 	d.Properties = props
 	d.lock.Unlock()
 	return d.Properties, err
@@ -376,7 +376,7 @@ func (d *Device) GetCharsList() ([]dbus.ObjectPath, error) {
 	}
 
 	list := manager.GetObjects()
-        list.Range(func (objpath, value interface{}) bool {
+	list.Range(func(objpath, value interface{}) bool {
 		path := string(objpath.(dbus.ObjectPath))
 		if !strings.HasPrefix(path, d.Path) {
 			return true
@@ -390,8 +390,8 @@ func (d *Device) GetCharsList() ([]dbus.ObjectPath, error) {
 		}
 
 		chars = append(chars, objpath.(dbus.ObjectPath))
-		return true            
-    })
+		return true
+	})
 	return chars, nil
 }
 
@@ -403,7 +403,8 @@ func (d *Device) IsConnected() bool {
 	if props == nil {
 		return false
 	}
-
+	props.Lock.RLock()
+	defer props.Lock.RUnlock()
 	return props.Connected
 }
 
@@ -431,10 +432,10 @@ func (d *Device) Disconnect() error {
 	c.Disconnect()
 	d.lock.RLock()
 	if d.watchPropertiesChannel != nil {
-            d.lock.RUnlock()
-	    d.unwatchProperties()
+		d.lock.RUnlock()
+		d.unwatchProperties()
 	} else {
-	    d.lock.RUnlock()
+		d.lock.RUnlock()
 	}
 	return nil
 }
