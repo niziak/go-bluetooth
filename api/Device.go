@@ -294,6 +294,13 @@ func (d *Device) GetChar(path string) (*profile.GattCharacteristic1, error) {
 	return profile.NewGattCharacteristic1(path)
 }
 
+//GetPath return a string
+func (d *Device) GetPath() string {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	return d.Path
+}
+
 //GetAllServicesAndUUID return a list of uuid's with their corresponding services
 func (d *Device) GetAllServicesAndUUID() ([]string, error) {
 
